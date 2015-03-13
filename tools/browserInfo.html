@@ -1,0 +1,63 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>浏览器信息</title>
+</head>
+
+<body>
+	<script>
+		with(document){
+			write("您的浏览器信息:<ol>");
+			write("<li>代码:"+navigator.appCodeName+"</li>");
+			write("<li>名称:"+navigator.appName+"</li>");
+			write("<li>版本:"+navigator.appVersion+"</li>");
+			write("<li>语言:"+navigator.language+"</li>");
+			write("<li>编译平台:"+navigator.platform+"</li>");
+			write("<li>用户表头:"+navigator.userAgent+"</li>");
+			write("</ol>");
+		}
+		if(document.all){
+			document.write("您的浏览器是MSIE<br/>");
+		}else{
+			document.write("您的浏览器是Navigator<br/>");
+		}
+		document.write("<hr/>");
+		
+		var len=navigator.plugins.length;
+		with(document){
+			write ("你的浏览器共支持" + len + "种plug-in：<BR>");
+			write ("<TABLE BORDER>")
+			write ("<CAPTION>PLUG-IN 清单</CAPTION>")
+			write ("<TR><TH> <TH>名称<TH>描述<TH>文件名")
+			for (var i=0; i<len; i++)
+				write("<TR><TD>" + i +
+					"<TD>" + navigator.plugins[i].name +
+					"<TD>" + navigator.plugins[i].description + 
+					"<TD>" + navigator.plugins[i].filename);
+			write("</table>");
+
+		}
+		
+		document.write("<hr/>");
+		
+		var leng = navigator.mimeTypes.length;
+		with (document) {
+			write ("你的浏览器共支持" + leng + "种MIME类型：");
+			write ("<TABLE BORDER>")
+			write ("<CAPTION>MIME type 清单</CAPTION>")
+			write ("<TR><TH> <TH>名称<TH>描述<TH>扩展名<TH>附注")
+		   for (var i=0; i<leng; i++) {
+			   write("<TR><TD>" + i + 
+				   "<TD>" + navigator.mimeTypes[i].type +
+				   "<TD>" + navigator.mimeTypes[i].description +
+				   "<TD>" + navigator.mimeTypes[i].suffixes +
+				   "<TD>" + 
+				  navigator.mimeTypes[i].enabledPlugin.name);
+			}
+			write("</table>");
+		} 
+
+	</script>
+</body>
+</html>

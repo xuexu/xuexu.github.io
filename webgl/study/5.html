@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<script type="text/javascript" src="../oka3d.js"></script>
+<script id="shader-fs" type="x-shader/x-fragment">
+
+    precision mediump float;
+
+	varying vec2 vTextureCoord;
+ 
+    uniform sampler2D uSampler;
+ 
+    void main(void) {
+        gl_FragColor = texture2D(uSampler, vec2(vTextureCoord.s, vTextureCoord.t));
+    }
+</script>
+		
+<script id="shader-vs" type="x-shader/x-vertex">
+    attribute vec3 aVertexPosition;
+    attribute vec2 aTextureCoord;
+ 
+    uniform mat4 uMVMatrix;
+    uniform mat4 uPMatrix;
+ 
+    varying vec2 vTextureCoord;
+ 
+ 
+    void main(void) {
+        gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);
+        vTextureCoord = aTextureCoord;
+    }
+</script>
+	<script type="text/javascript">
+	    var gl;
+	    function initGL(canvas) {
+	        try {
+	            gl = canvas.getContext("experimental-webgl");
+	            gl.viewportWidth = canvas.width;
+	            gl.viewportHeight = canvas.height;
+	        } catch (e) {
+	        }
+	        if (!gl) {
+	            alert("Could not initialise WebGL, sorry :-(");
+	        }
+	    }
+	
+	
+	    function getShader(gl, id) {
+	        var shaderScript = document.getElementById(id);
+	        if (!shaderScript) {
+	            return null;
+	        }
+	
+	        var str = "";
+	        var k = shaderScript.firstChild;
+	        while (k) {
+	            if (k.nodeType == 3) {
+	                str += k.textContent;
+	            }
+	            k = k.nextSibling;
+	        }
+	
+	        var shader;
+	        if (shaderScript.type == "x-shader/x-fragment") {
+	            shader = gl.createShader(gl.FRAGMENT_SHADER);
+	        } else if (shaderScript.type == "x-shader/x-vertex") {
+	            shader = gl.createShader(gl.VERTEX_SHADER);
+	        } else {
+	            return null;
+	        }
+	
+	        gl.shaderSource(shader, str);
+	        gl.compileShader(shader);
+	
+	        if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+	            alert(gl.getShaderInfoLog(shader));
+	            return null;
+	        }
+	
+	        return shader;
+	    }
+	
+	
+	    var shaderProgram;
+	
+	    function initShaders() {
+	        var fragmentShader = getShader(gl, "shader-fs");
+	        var vertexShader = getShader(gl, "shader-vs");
+	
+	        shaderProgram = gl.createProgram();
+	        gl.attachShader(shaderProgram, vertexShader);
+	        gl.attachShader(shaderProgram, fragmentShader);
+	        gl.linkProgram(shaderProgram);
+	
+	        if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
+	            alert("Could not initialise shaders");
+	        }
+	
+	        gl.useProgram(shaderProgram);
+			
+	        shaderProgram.vertexPositionAttribute = gl.getAttribLocation(shaderProgram, "aVertexPosition");
+	        gl.enableVertexAttribArray(shaderProgram.vertexPositionAttribute);
+	        
+	        shaderProgram.textureCoordAttribute = gl.getAttribLocation(shaderProgram, "aTextureCoord");
+	        gl.enableVertexAttribArray(shaderProgram.textureCoordAttribute);
+	
+	        shaderProgram.pMatrixUniform = gl.getUniformLocation(shaderProgram, "uPMatrix");
+	        shaderProgram.mvMatrixUniform = gl.getUniformLocation(shaderProgram, "uMVMatrix");
+	    }
+	
+	
+	    var mvMatrix;
+	    var pMatrix;
+	
+	    function setMatrixUniforms() {
+	        gl.uniformMatrix4fv(shaderProgram.pMatrixUniform, false, pMatrix.toArray());
+	        gl.uniformMatrix4fv(shaderProgram.mvMatrixUniform, false, mvMatrix.toArray());
+	    }
+	
+	
+	
+	    var cubeVertexPositionBuffer;
+	    var cubeVertexTextureCoordBuffer;
+	    var cubeVertexIndexBuffer;
+	
+	    function initBuffers() {
+	
+	        cubeVertexPositionBuffer = gl.createBuffer();
+	        gl.bindBuffer(gl.ARRAY_BUFFER, cubeVertexPositionBuffer);
+	        vertices = [
+	             //前
+	             1.0,  1.0,  1.0,
+	            -1.0,  1.0,  1.0,
+	             1.0, -1.0,  1.0,
+	            -1.0, -1.0,  1.0,
+	            //后
+	             1.0,  1.0,  -1.0,
+	            -1.0,  1.0,  -1.0,
+	             1.0, -1.0,  -1.0,
+	            -1.0, -1.0,  -1.0,
+	            //右
+	            1.0,  1.0,   1.0,
+	            1.0, -1.0,   1.0,
+	            1.0,  1.0,  -1.0,
+	            1.0, -1.0,  -1.0,
+	            //左
+	            -1.0,  1.0,   1.0,
+	            -1.0, -1.0,   1.0,
+	            -1.0,  1.0,  -1.0,
+	            -1.0, -1.0,  -1.0,
+	            //上
+	             1.0,  1.0,   1.0,
+	            -1.0,  1.0,   1.0,
+	             1.0,  1.0,  -1.0,
+	            -1.0,  1.0,  -1.0,
+	            //下
+	             1.0,  -1.0,  1.0,
+	            -1.0,  -1.0,  1.0,
+	             1.0,  -1.0, -1.0,
+	            -1.0,  -1.0, -1.0,
+	        ];
+	        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
+	        cubeVertexPositionBuffer.itemSize = 3;
+	        cubeVertexPositionBuffer.numItems = 24;
+	        
+	        cubeVertexTextureCoordBuffer=gl.createBuffer();
+	        gl.bindBuffer(gl.ARRAY_BUFFER,cubeVertexTextureCoordBuffer);
+	        var textureCoords=[
+                  			//前
+                             1.0,1.0,
+                             0.0,1.0,
+                             1.0,0.0,
+                             0.0,0.0,
+                           //后
+                             1.0,1.0,
+                             0.0,1.0,
+                             1.0,0.0,
+                             0.0,0.0,
+                             //右
+                             1.0,1.0,
+                             0.0,1.0,
+                             1.0,0.0,
+                             0.0,0.0,
+                             //左
+                             1.0,1.0,
+                             0.0,1.0,
+                             1.0,0.0,
+                             0.0,0.0,
+                             //上
+                             1.0,1.0,
+                             0.0,1.0,
+                             1.0,0.0,
+                             0.0,0.0,
+                             //下
+                             1.0,1.0,
+                             0.0,1.0,
+                             1.0,0.0,
+                             0.0,0.0,
+                             ];
+	       	gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(textureCoords),gl.STATIC_DRAW);
+	       	cubeVertexTextureCoordBuffer.itemSize=2;
+	       	cubeVertexTextureCoordBuffer.numItems=24;
+	       	
+	       	cubeVertexIndexBuffer = gl.createBuffer();
+	       	gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,cubeVertexIndexBuffer);
+	       	var cubeVertexIndices = [
+                0, 1, 2,      1, 2, 3,    // 前
+                4, 5, 6,      5, 6, 7,    // 后
+                8, 9, 10,     9, 10, 11,  // 右
+                12, 13, 14,   13, 14, 15, // 左
+                16, 17, 18,   17, 18, 19, // 上
+                20, 21, 22,   21, 22, 23,  // 下
+            ];
+            gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(cubeVertexIndices), gl.STATIC_DRAW);
+            cubeVertexIndexBuffer.itemSize = 1;
+            cubeVertexIndexBuffer.numItems = 36;
+	    }
+	
+	    var rPyramid=0;		//角度   	 锥体
+	    var rCube=0;		// 		长方体
+	    var xRot = 0;
+	    var xSpeed=0;
+	    
+	    var yRot = 0;
+	    var ySpeed=0;
+	    
+	    var zRot = 0;
+	    var z=-5.0;
+	    
+	    var filter=0;		//纹理渲染模式(模缩放时的显示)
+	
+	    function drawScene() {
+	        gl.viewport(0, 0, gl.viewportWidth, gl.viewportHeight);
+	        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+			
+	        pMatrix = okMat4Proj(45, gl.viewportWidth / gl.viewportHeight, 0.1, 100.0);
+	        
+	        mvMatrix = okMat4Trans(0.0, 0.0, z); 
+	
+	        //mvPushMatrix();
+	        //mvMatrix.translate(OAK.SPACE_WORLD, 1.5, 0.0, -7.0, true);
+	        mvMatrix.rotX(OAK.SPACE_LOCAL, xRot, true);
+	        mvMatrix.rotY(OAK.SPACE_LOCAL, yRot, true);
+	        //mvMatrix.rotZ(OAK.SPACE_LOCAL, zRot, true);
+	        
+	        gl.bindBuffer(gl.ARRAY_BUFFER, cubeVertexPositionBuffer);
+	        gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, cubeVertexPositionBuffer.itemSize, gl.FLOAT, false, 0, 0);
+	        gl.bindBuffer(gl.ARRAY_BUFFER, cubeVertexTextureCoordBuffer);
+	        gl.vertexAttribPointer(shaderProgram.textureCoordAttribute, cubeVertexTextureCoordBuffer.itemSize, gl.FLOAT, false, 0, 0);
+	        gl.activeTexture(gl.TEXTURE0);
+	        gl.bindTexture(gl.TEXTURE_2D, createTextures[filter]);		//绑定纹理
+	        gl.uniform1i(shaderProgram.samplerUniform, 0);
+	        
+	        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, cubeVertexIndexBuffer);
+	        setMatrixUniforms();
+	        gl.drawElements(gl.TRIANGLES, cubeVertexIndexBuffer.numItems, gl.UNSIGNED_SHORT, 0);
+	        //mvPopMatrix();
+	    }
+	    var lastTime = 0;
+	    function animate() {
+	        var timeNow = new Date().getTime();
+	        if (lastTime != 0) {
+	            var elapsed = timeNow - lastTime;
+	 
+	            xRot += (xSpeed * elapsed) / 1000.0;
+	            yRot += (ySpeed * elapsed) / 1000.0;
+// 	            zRot += (90 * elapsed) / 1000.0;
+	        }
+	        lastTime = timeNow;
+	    }
+	    
+	    function handleLoadedTexture(texture) {
+	    	gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+	    	
+	    	gl.bindTexture(gl.TEXTURE_2D, texture[0]);
+	        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, texture[0].image);
+	        /*
+	        *	nearest: 最近点采样过滤
+	        *	当纹理被按比例放大或者缩小时，WebGL会在原始图像上寻找最近的点来决定指定点的颜色。在没有缩放的情况下，纹理看其来还是不错的；
+	        *	缩小后，图像看起来还过得去；但是纹理图像被放大时，看起来会有很多“马赛克”，因为这种算法实际上只是简单地放大了原始图像的像素，并没有做其他任何优化。
+	        */
+	        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);			
+	        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+	        
+	        gl.bindTexture(gl.TEXTURE_2D, texture[1]);
+	        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, texture[1].image);
+	        /*
+	        *	linear: 线性过滤
+	        *	线性算法能够在纹理被放大时更好的表现物体；基本可以说，它对原始纹理图像上的像素进行了线性插值。
+	        *	说的再大概一下，在一个白的和一个黑的像素之间的像素会被输出为灰色。这样的话，我们看到的画面效果就更加平滑，但是必然原本锐利的边缘部分会看起来有点模糊。
+	        */
+	        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+	        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+	        
+	        gl.bindTexture(gl.TEXTURE_2D, texture[2]);
+	        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, texture[2].image);
+	        /*
+	        *	linear_mipmap_nearest: 多级渐近纹理过滤
+	        *	Mipmaps过滤通过为纹理图像生成许多被称为mip level的子图像的方法解决了这个问题。这些图像分别是原图尺寸大小、四分之一大小、十六分之一大小……直到1×1像素大小。
+	        *	所有这些子图像的集合被称为mipmap。每一个mip level都是上一级大一点的mip level的平均值，这样，就很容易为当前缩放规格找出合适的图像版本：这一算法依赖于gl.TEXTURE_MIN_FILTER的值， 它所做的就是根据当前缩放规格，找到最合适的mip level，然后运用Linear过滤获得适合的像素。
+	        */
+	        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+	        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_NEAREST);
+	        gl.generateMipmap(gl.TEXTURE_2D);
+	        
+	        gl.bindTexture(gl.TEXTURE_2D, null);
+	    }
+	    
+	    var createTextures=[];
+
+	    function initTexture() {
+	    	var img=new Image();
+	    	for(var i=0;i<3;i++){
+	    		var neheTexture = gl.createTexture();
+		        neheTexture.image = img;
+		        createTextures.push(neheTexture);
+	    	}
+	        
+	        img.onload = function () {
+	            handleLoadedTexture(createTextures);
+	        };
+
+	        img.src = "crate.gif";
+	        //console.log(neheTexture.image.src);
+	    }
+	    
+	    var mvMatrixStack = [];
+
+	    function mvPushMatrix() {
+	        var copy = new okMat4();
+	        mvMatrix.clone(copy);
+	        mvMatrixStack.push(copy);
+	    }
+	 
+	    function mvPopMatrix() {
+	        if (mvMatrixStack.length == 0) {
+	            throw "Invalid popMatrix!";
+	        }
+	        mvMatrix = mvMatrixStack.pop();
+	    }
+	    
+	    function tick(){
+	    	okRequestAnimationFrame(tick);
+	    	handleKeys();
+	    	drawScene();
+	    	animate();
+	    }
+	    
+	    
+		function webGLStart(){
+			var canvas=document.getElementById("myCanvas");
+			initGL(canvas);
+			initShaders();
+			initBuffers();
+			initTexture();
+			
+			gl.clearColor(0.0, 0.0, 0.0, 1.0);
+	        gl.enable(gl.DEPTH_TEST);
+	        
+	        document.onkeydown=handleKeyDown;
+	        document.onkeyup=handleKeyUp;
+
+	        tick();
+	        //drawScene();
+		}
+		
+		
+		//键盘监听事件
+		var currentlyPressedKeys={};
+		
+		function handleKeyDown(event){
+			currentlyPressedKeys[event.keyCode]=true;
+			if(String.fromCharCode(event.keyCode)=="F"){
+				filter+=1;
+				if(filter==3) filter=0;
+				console.log(filter);
+			}
+		}
+		
+		function handleKeyUp(event){
+			currentlyPressedKeys[event.keyCode]=false;
+		}
+		
+		function handleKeys() {
+	        if (currentlyPressedKeys[33]) {
+	            // Page Up
+	            z -= 0.05;
+	        }
+	        if (currentlyPressedKeys[34]) {
+	            // Page Down
+	            z += 0.05;
+	        }
+	        if (currentlyPressedKeys[37]) {
+	            // Left cursor key
+	            ySpeed -= 1;
+	        }
+	        if (currentlyPressedKeys[39]) {
+	            // Right cursor key
+	            ySpeed += 1;
+	        }
+	        if (currentlyPressedKeys[38]) {
+	            // Up cursor key
+	            xSpeed -= 1;
+	        }
+	        if (currentlyPressedKeys[40]) {
+	            // Down cursor key
+	            xSpeed += 1;
+	        }
+	    }
+	</script>
+</head>
+<body onload="webGLStart();">
+	<canvas id="myCanvas" style="border:none;" width="500" height="500">
+	你OUT了,换个支持CANVAS的浏览器吧!
+	</canvas>
+</body>
+</html>
