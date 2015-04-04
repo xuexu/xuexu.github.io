@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8" />
+		<title>音乐旋律图形化</title>
+		<script type="text/javascript">
+			
+		</script>
+	</head>
+	<body>
+		<div  style="margin: 0 auto;width: 800px;">
+			<canvas id="myCanvas" height="600" width="800"></canvas>
+		</div>
+	</body>
+	<script type="text/javascript">
+			(function(){
+				var audio,audioContext,processor,analyer;
+				try{
+					audioContext=new (window.AudioContext
+						||window.webkitAudioContext)()
+				}catch(e){
+					alert('您的浏览器不支持Web Audio API');
+					throw new Error('您的浏览器不支持Web Audio API');
+				}
+				//创建一个1024字节的缓冲区
+				processor=audioContext.createScriptProcessor(1024);
+				//创建一个分析节点
+				analyer=audioContext.createAnalyser();
+				processor.connect(audioContext.destination);
+				analyer.connect(processor);
+				
+				var data=new Uint8Array(analyer.frequencyBinCount);
+				
+				var Sound={
+					element:undefined,
+					play:function(){
+						var sound=audioContext.createMediaElementSource(this.element);
+						this.element.onended=function(){
+							sound.disconnect();
+							sound=null;
+							processor.onaudioprocess=function(){};
+						};
+						sound.connect(analyer);
+						sound.connect(audioContext.destination);
+						
+						processor.onaudioprocess=function(){
+							analyer.getByteTimeDomainData(data);
+							//console.log(data);
+						};
+						
+						this.element.play();
+					}
+				};
+				
+				var loadAudioElement=function(url){
+					return new Promise(function(resolve,reject){
+						var audio=new Audio();
+						audio.addEventListener('canplay',function(){
+							resolve(audio);
+						});
+						audio.addEventListener('error',reject);
+						audio.src=url;
+					});
+				};
+				loadAudioElement('music/TellMeWhy.mp3').then(function(elem){
+					audio=Sound;
+					audio.element=elem;
+					audio.play();
+				},function(elem){
+					throw elem.error;
+				});
+				
+				requestAnimationFrame=window.requestAnimationFrame
+									||window.webkitRequestAnimationFrame
+									||window.mozRequestAnimationFrame
+									||window.msRequestAnimationFrame
+									||function(callback){window.setTimeout(callback,1000/60);};
+				var canvas=document.getElementById("myCanvas");
+				var ctx=canvas.getContext('2d');
+				ctx.strokeStyle='white';
+				ctx.lineWidth=35;
+				
+				var drawLine=function(sx,sy,ex,ey){
+					ctx.beginPath();
+					ctx.moveTo(sx,sy);
+					ctx.lineTo(ex,ey);
+					ctx.stroke();
+				};
+				
+				var lineCount=20;
+				var step=Math.floor(data.length/lineCount);
+				
+				
+				var render=function(td){
+					ctx.fillStyle='rgba(0,0,0,0.3)';
+					ctx.fillRect(0,0,canvas.width,canvas.height);
+					ctx.globalAlpha=0.6;
+					for (var i = 0,n=0; i < lineCount; i++,n+=step) {
+						drawLine(30+35*(i+1),canvas.height-100,30+35*(i+1),canvas.height-100-data[n]);
+					}
+					ctx.globalAlpha=1.0;
+					requestAnimationFrame(render);
+				};
+				render();
+			})();
+		</script>
+</html>
