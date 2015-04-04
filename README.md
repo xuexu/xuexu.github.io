@@ -7,4 +7,4 @@
 5. WebGL
 
 ### 演示地址
-[xuexu.github.io](https://xuexu.githu.io)
+[xuexu.github.io](https://xuexu.github.io)
