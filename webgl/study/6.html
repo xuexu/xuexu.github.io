@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
+	<meta charset="utf-8">
 	<script type="text/javascript" src="../oka3d.js"></script>
 <script id="shader-fs" type="x-shader/x-fragment">
 
@@ -410,8 +411,14 @@
 	</script>
 </head>
 <body onload="webGLStart();">
-	<canvas id="myCanvas" style="border:none;" width="500" height="500">
-	你OUT了,换个支持CANVAS的浏览器吧!
-	</canvas>
+	<div style='width:500px;margin:0 auto;'>
+		<canvas id="myCanvas" style="border:none;" width="500" height="500">
+		你OUT了,换个支持CANVAS的浏览器吧!
+		</canvas>
+	</div>
+	<div style='text-align:center;'>
+		PageUp(pgup),PageDown(pgdn) :  控制缩放<br />
+		上下左右(↑↓←→) : 控制旋转方向及速度
+	</div>
 </body>
 </html>
