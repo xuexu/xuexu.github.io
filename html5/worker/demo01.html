@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<title></title>
+		<script>
+			"use strict";
+			var URL = window.URL || window.webkitURL,
+                reg =/^function\s*\([\$_a-zA-z\d,]*\)\s*{([\s\S]+)}$/g,
+                worker,
+                urlObject,
+                blob,
+                func = function(){
+                	function f(n){
+                		return n<2?n:(f(n-2)+f(n-1))
+                	}
+                	addEventListener('message',function(e){
+                		if(typeof e.data === 'number'){
+                			var start = Date.now(),result;
+                			console.log('开始计算：Fibonacci('+e.data+'): '+start);
+                			result=f(e.data)
+                			console.log('Fibonacci('+e.data+'): '+result+'  耗时：'+(Date.now() - start)+' ms');
+                		}
+                	})
+                };
+                
+            blob = new Blob([func.toString().replace(reg,function(){return arguments[1];})],{type:'text/text'});
+            urlObject = URL.createObjectURL(blob);
+            worker = [new Worker(urlObject),new Worker(urlObject),new Worker(urlObject),new Worker(urlObject)];
+            
+            worker[0].postMessage(20);
+            worker[1].postMessage(30);
+            worker[2].postMessage(40);
+            worker[3].postMessage(45);
+		</script>
+	</head>
+	<body>
+	</body>
+</html>
