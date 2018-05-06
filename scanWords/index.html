@@ -210,7 +210,6 @@
             CANVAS_HEIGHT,
             space = 20;
         var params = QueryString.parse(location.search);
-        console.log(params);
         WORD = params.word || 'KILLNGER';
         RADIUS = (params.r || 2) - 0;
         RECT_WIDTH = (RADIUS + 1) * 2;
@@ -226,6 +225,8 @@
         offsetCtx.font = FONT_SIZE + 'px 宋体';
         offsetCanvas.width = Math.ceil(offsetCtx.measureText('梄').width);
         offsetCanvas.height = offsetCanvas.width * 2;
+        console.log(params);
+        myCanvas.style.backgroundColor = params.bgColor || '';
 
         ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
         myCanvas.width = CANVAS_WIDTH;
