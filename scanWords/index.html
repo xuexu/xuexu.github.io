@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="zh_cn">
+<head>
+    <meta charset="UTF-8">
+    <!--<meta name="viewport" content="target-densitydpi=medium-dpi,initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no">-->
+    <title>生成点阵文字</title>
+    <style type="text/css">
+        html,body{
+            margin: 0;
+            height: 100%;
+            overflow: hidden;
+        }
+        canvas{
+            margin: 0;
+        }
+    </style>
+    <script type="text/javascript">
+      var kr = {};
+      +function (win) {
+        'use strict';
+        var startTime = +new Date(), id;        //程序启动时的时间点
+        win.requestNextAnimationFrame = (function () {
+          return win.requestAnimationFrame ||
+            win.webkitRequestAnimationFrame ||
+            win.mozRequestAnimationFrame ||
+            win.msRequestAnimationFrame ||
+            function (callback) {
+              var self = this,
+                start, finish;
+              id = win.setTimeout(function () {
+                start = +new Date();
+                callback(start - startTime);        //将程序运行的总时长返回给回调函数
+                finish = +new Date();
+                self.timeout = 1000 / 60 - (finish - start);
+              }, self.timeout);
+            }
+        })();
+
+        win.cancelNextAnimationFrame = (function () {
+          return win.cancelAnimationFrame ||
+            win.webkitCancelAnimationFrame ||
+            win.mozCancelAnimationFrame ||
+            win.msCancelAnimationFrame ||
+            function (callback) {
+              win.clearTimeout(id);
+              if (typeof callback === 'function')callback();
+            }
+        })();
+      }(window);
+      /**
+       * 动画时间管理器
+       */
+      +function (win) {
+        'use strict';
+        var DEFAULT_ELASTIC_PASSES = 3,  //默认弹簧动画往返次数
+          pow = Math.pow, sin = Math.sin, cos = Math.cos,
+          PI = Math.PI;
+        /**
+         * 秒表,用于动画精确计时
+         * @constructor Stopwatch
+         */
+        var Stopwatch = function () {
+        };
+        Stopwatch.prototype = {
+          startTime: 0,
+          running: false,
+          runTime: 0,                //运行时间
+          elapsed: undefined,
+          start: function () {
+            this.startTime = +new Date();
+            this.elapsed = undefined;
+            this.running = true;
+          },
+          stop: function () {
+            this.elapsed = Date.now() - this.startTime;
+            this.running = false;
+          },
+          getElapsedTime: function () {
+            if (this.running) {
+              return Date.now() - this.startTime;
+            } else {
+              return this.elapsed;
+            }
+          },
+          isRunning: function () {
+            return this.running;
+          },
+          reset: function () {
+            this.elapsed = 0;
+          }
+        };
+
+        /**
+         * 动画时间管理器
+         * @param duration      动画持续时间
+         * @param timeWarp      动画时间扭曲函数
+         * @constructor
+         */
+        var AnimationTimer = function (duration, timeWarp) {
+          this.timeWarp = timeWarp;
+          this.duration = duration;
+          this.stopwatch =  new Stopwatch();
+        };
+
+        AnimationTimer.prototype = {
+          duration: undefined,
+          start: function () {
+            this.stopwatch.start();
+          },
+          stop: function () {
+            this.stopwatch.stop();
+          },
+          /**
+           * 获取被扭曲后的动画时间
+           */
+          getElapsedTime: function () {
+            var elapsedTime = this.stopwatch.getElapsedTime(),
+              percentComplete = elapsedTime / this.duration;
+            if (!this.stopwatch.isRunning()) {
+              return undefined;
+            } else if (this.timeWarp) {
+              return elapsedTime * (this.timeWarp(percentComplete) / percentComplete);
+            } else {
+              return elapsedTime;
+            }
+          },
+          getElapsedPercent: function () {
+            var elapsedTime = this.stopwatch.getElapsedTime(),
+              percentComplete = elapsedTime / this.duration;
+            return percentComplete;
+          },
+          reset: function () {
+            this.stopwatch.reset();
+          },
+          isRunning: function () {
+            return this.stopwatch.isRunning();
+          },
+          isOver: function () {
+            return this.stopwatch.getElapsedTime() > this.duration;
+          }
+        };
+
+        /**
+         * 时间扭曲函数: 缓入
+         * @param strength 指数基本(最终运算指数会在此值上乘以2)
+         * @returns {Function}
+         */
+        AnimationTimer.easeIn = function (strength) {
+          strength = strength || 1;
+          return function (percentComplete) {
+            return pow(percentComplete, strength * 2);
+          }
+        };
+        /**
+         * 时间扭曲函数: 缓出
+         * @param strength 指数基本(最终运算指数会在此值上乘以2)
+         * @returns {Function}
+         */
+        AnimationTimer.easeOut = function (strength) {
+          strength = strength || 1;
+          return function (percentComplete) {
+            return 1 - pow(1 - percentComplete, strength * 2);
+          }
+        }
+        /**
+         * 缓入缓出
+         * @param strength
+         * @returns {Function}
+         */
+        AnimationTimer.easeInOut = function (strength) {
+          return function (percentComplete) {
+            return percentComplete - sin(percentComplete * PI * 2) / (PI * 2);
+          }
+        };
+        /**
+         * 弹簧运动
+         * @param passes        往返次数: 通过中线的次数
+         * @returns {Function}
+         */
+        AnimationTimer.elastic = function (passes) {
+          passes = passes || DEFAULT_ELASTIC_PASSES;
+          return function (percentComplete) {
+            return (1 - cos(percentComplete * 2 * PI * passes))
+              * ( 1 - percentComplete) + percentComplete;
+          }
+        };
+        /**
+         * 线性运动
+         * @returns {Function}
+         */
+        AnimationTimer.linear = function () {
+          return function (percentComplete) {
+            return percentComplete;
+          }
+        }
+
+        kr.AnimationTimer = AnimationTimer;
+      }(window);
+    </script>
+    <script src="queryString.js"></script>
+</head>
+<body>
+    <canvas id="myCanvas"></canvas>
+    <script type="text/javascript">
+        var WORD,
+            RADIUS,
+            RECT_WIDTH,
+            FONT_SIZE,
+            CANVAS_WIDTH,
+            CANVAS_HEIGHT,
+            space = 20;
+        var params = QueryString.parse(location.search);
+        console.log(params);
+        WORD = params.word || 'KILLNGER';
+        RADIUS = (params.r || 2) - 0;
+        RECT_WIDTH = (RADIUS + 1) * 2;
+        FONT_SIZE = (params.fs || 230) - 0;
+        space = (params.space || 20) - 0;
+        CANVAS_WIDTH = (params.w || document.body.clientWidth) - 0;
+        CANVAS_HEIGHT = (params.h || document.body.clientHeight) - 0;
+
+        let myCanvas = document.getElementById('myCanvas'),
+          ctx = myCanvas.getContext('2d'),
+          offsetCanvas = document.createElement('canvas'),
+          offsetCtx = offsetCanvas.getContext('2d');
+        offsetCtx.font = FONT_SIZE + 'px 宋体';
+        offsetCanvas.width = Math.ceil(offsetCtx.measureText('梄').width);
+        offsetCanvas.height = offsetCanvas.width * 2;
+
+        ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+        myCanvas.width = CANVAS_WIDTH;
+        myCanvas.height = CANVAS_HEIGHT;
+
+//        ctx.fillStyle = '#ffffff';
+//        ctx.textBaseline = 'middle';
+//        ctx.textAlign = 'center';
+//        ctx.font = FONT_SIZE + 'px 宋体';
+//        ctx.fillText(WORD, ctx.canvas.width / 2, ctx.canvas.height / 2);
+
+        offsetCtx.font = FONT_SIZE + 'px 宋体';
+        offsetCtx.fillStyle = '#00ffff';
+        offsetCtx.textBaseline = 'top';
+
+
+
+        function getAllWordBalls() {
+          let allBalls = {};
+          WORD.split('').forEach(word => {
+            if (!allBalls[word]) {
+              allBalls[word] = singleWordBalls(word, offsetCtx);
+            }
+          });
+          return allBalls;
+        }
+
+        function singleWordBalls(word, ctx) {
+          ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+          ctx.fillText(word, 0, 0);
+          return getBalls(ctx);
+        }
+
+        function getBalls(ctx) {
+          let balls = [],
+            rowCount = 0,
+            i = 0, j = 0,
+            cols = Math.ceil(ctx.canvas.width / RECT_WIDTH),
+            rows = Math.ceil(ctx.canvas.height / RECT_WIDTH),
+            flag = false;
+          let minX = 10000, minY = 10000, maxX = -10000, maxY = -10000;
+            for (; j < rows; ++j) {
+              i = 0;
+              flag = false;
+              for (; i < cols; ++i) {
+                let d = ctx.getImageData(i * RECT_WIDTH, j * RECT_WIDTH,  RECT_WIDTH,  RECT_WIDTH).data;
+                if (checkPixel(d)) {
+                  balls.push({
+                    x: i * RECT_WIDTH,
+                    y: j * RECT_WIDTH
+                  });
+                  minX = Math.min(minX, i * RECT_WIDTH);
+                  minY = Math.min(minY, j * RECT_WIDTH);
+                  maxX = Math.max(maxX, i * RECT_WIDTH);
+                  maxY = Math.max(maxY, j * RECT_WIDTH);
+                  flag = true;
+                }
+              }
+              if (flag) {
+                rowCount = 0;
+              } else {
+                rowCount++;
+              }
+            }
+            balls.forEach((ball) => {
+              ball.x -= minX;
+              ball.y -= minY;
+            });
+            return {
+              balls,
+              width: maxX - minX,
+              height: maxY - minY
+            };
+//            drawBalls(balls, ctx);
+//          for (let i = 0, len = datas.length; i < len; i += 4) {
+//
+//          }
+        }
+        
+        function checkPixel(d) {
+          let flag = false, count = 0;
+          for (let i = 0, len = d.length; i < len; i += 4) {
+            if (d[i + 3]) {
+              count ++;
+            }
+          }
+          if (count >= RECT_WIDTH * RECT_WIDTH / 10) {
+            flag = true;
+          }
+          return flag;
+        }
+
+        function computeRealDrawBalls(allBalls, ctx) {
+          let centerX = parseInt(ctx.canvas.width / 2),
+            centerY = parseInt(ctx.canvas.height / 2);
+          let balls = [], w = 0, resultBalls = [];
+          WORD.split('').forEach((word, i) => {
+            if (i > 0) {
+              w += space;
+            }
+            w += allBalls[word].width;
+            balls.push({
+              width: allBalls[word].width,
+              height: allBalls[word].height,
+              balls: JSON.parse(JSON.stringify(allBalls[word].balls))
+            });
+          });
+          let startX = (ctx.canvas.width - w) / 2;
+          balls.forEach((ball, i) => {
+            if (i > 0) {
+              startX += space;
+            }
+            ball.balls.forEach(b => {
+              b.x += startX;
+              b.y += (ctx.canvas.height - ball.height) / 2;
+              b.ix = b.x;
+              b.iy = b.y;
+//              b.x = ctx.canvas.width / 2 - RADIUS;
+//              b.y = ctx.canvas.height / 2 - RADIUS;
+              b.fillStyle = 'rgba('+(parseInt(Math.random() * 155) + 100)+','+(parseInt(Math.random() * 155) + 100)+','+(parseInt(Math.random() * 155) + 100)+',1)';
+              b.ivx = Math.random() * 500 - 250;
+              b.ivy = Math.random() * 500 - 250;
+              b.vx = b.ivx;
+              b.vy = b.ivy;
+//              b.drag = Math.random() * 0.5 + 0.5; // 阻力系数
+              b.totalLife = (Math.random() * 10 + 5) * 1000;
+              b.life = b.totalLife;
+              b.duration = 2 * 1000;
+              b.aniTimer = new kr.AnimationTimer(b.duration, kr.AnimationTimer.easeInOut());
+              resultBalls.push(b);
+            });
+            startX += ball.width;
+          });
+
+          return resultBalls;
+        }
+        
+        function initBallVelocity(balls) {
+          balls.forEach(b => {
+            b.aniEnd = false;
+            b.fillStyle = 'rgba('+(parseInt(Math.random() * 155) + 100)+','+(parseInt(Math.random() * 155) + 100)+','+(parseInt(Math.random() * 155) + 100)+',1)';
+            b.ivx = Math.random() * 500 - 250;
+            b.ivy = Math.random() * 500 - 250;
+            b.vx = b.ivx;
+            b.vy = b.ivy;
+//              b.drag = Math.random() * 0.5 + 0.5; // 阻力系数
+            b.totalLife = (Math.random() * 10 + 5) * 1000;
+            b.life = b.totalLife;
+          });
+        }
+
+        let stopCount = 0, stopTimes = 0;
+        function drawBalls(time, balls, ctx) {
+//          ctx.fillStyle = '';
+          ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+          let ball = null;
+          for (let i = 0, len = balls.length; i < len; ++i) {
+            ball = balls[i];
+            ball.life -= time;
+            ctx.fillStyle = ball.fillStyle;
+            ctx.beginPath();
+            if (ball.aniTimer.isRunning()) {
+              let p = ball.aniTimer.getElapsedPercent();
+              ball.x = ball.backX + p * (ball.ix - ball.backX);
+              ball.y = ball.backY +  p * (ball.iy - ball.backY);
+              if (Math.abs(ball.ix - ball.x) <= 1) {
+                ball.x = ball.ix;
+              }
+              if (Math.abs(ball.iy - ball.y) <= 1) {
+                ball.y = ball.iy;
+              }
+              if (ball.aniTimer.getElapsedTime() >= ball.duration) {
+                ball.aniTimer.stop();
+                ball.aniEnd = true;
+                stopCount++;
+              }
+            } else if (ball.life > 0) {
+              ball.x += ball.vx * time / 1000;
+              ball.y += ball.vy * time / 1000;
+              if (ball.x < RADIUS) {
+                ball.x = RADIUS;
+                ball.ivx = - ball.ivx;
+              }
+              if (ball.y < RADIUS) {
+                ball.y = RADIUS;
+                ball.ivy = - ball.ivy;
+              }
+              if (ball.x > ctx.canvas.width - RADIUS) {
+                ball.x = ctx.canvas.width - RADIUS;
+                ball.ivx = - ball.ivx;
+              }
+              if (ball.y > ctx.canvas.height - RADIUS) {
+                ball.y = ctx.canvas.height - RADIUS;
+                ball.ivy = - ball.ivy;
+              }
+//            if (ball.life <= -10 * 1000) {
+//              ball.life = 10 * 1000;
+//            } else if (ball.life >= 10 * 1000) {
+//              ball.life = -10 * 1000;
+//            }
+              ball.vx = ball.ivx * ball.life / ball.totalLife;
+              ball.vy = ball.ivy * ball.life / ball.totalLife;
+//            if (Math.abs(ball.vx) < 1) {
+//              ball.vx = 0;
+//            }
+//            if (Math.abs(ball.vy) < 1) {
+//              ball.vy = 0;
+//            }
+            } else {
+              ball.life = 0;
+              if (!ball.aniEnd) {
+                ball.backX = ball.x;
+                ball.backY = ball.y;
+                ball.aniTimer.start();
+              }
+            }
+            ctx.arc(ball.x, ball.y, RADIUS, 0, 2 * Math.PI);
+            ctx.closePath();
+            ctx.fill();
+          }
+          if (stopCount === balls.length) {
+            stopTimes += time;
+            // 所有小球已停止运动10，重新开始动画
+            if (stopTimes >= 10 * 1000) {
+              stopCount = 0;
+              stopTimes = 0;
+              initBallVelocity(balls);
+            }
+          }
+        }
+
+        var distBalls = computeRealDrawBalls(getAllWordBalls(), ctx);
+//        distBalls.length = 1;
+        drawBalls(0, distBalls, ctx);
+
+        let prevTime = 0;
+        function update(time) {
+          if (prevTime !== 0) {
+            drawBalls(time - prevTime, distBalls, ctx);
+          }
+          prevTime = time;
+          requestAnimationFrame(update);
+        }
+        setTimeout(function () {
+          requestAnimationFrame(update);
+        }, 3000);
+    </script>
+</body>
+</html>
