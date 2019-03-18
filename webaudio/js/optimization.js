@@ -134,11 +134,11 @@
 		}
 	};
 	
-	loadAudioElement('music/海绵宝宝.mp3').then(function(elem) {
+	loadAudioElement('music/biu.mp3').then(function(elem) {
 		audio = Sound;
 		audio.element = elem;
 		audio.play();
-		render(0);
+		// render(0);
 	}, function(elem) {
 		throw elem.error;
 	});
@@ -163,4 +163,11 @@
 	function fuzzy(range, base) {
 		return (base || 0) + (Math.random() - 0.5) * range * 2;
 	}
+
+	setInterval(function () {
+		// audio.load();
+		console.log('播放');
+        // audio.element.load();
+		audio.play();
+    }, 10000);
 })();

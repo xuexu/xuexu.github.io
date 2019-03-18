@@ -392,13 +392,9 @@
               let p = ball.aniTimer.getElapsedPercent();
               ball.x = ball.backX + p * (ball.ix - ball.backX);
               ball.y = ball.backY +  p * (ball.iy - ball.backY);
-              if (Math.abs(ball.ix - ball.x) <= 1) {
+              if (Math.pow(ball.ix - ball.x, 2) + Math.pow(ball.iy - ball.y, 2) <= 5 || ball.aniTimer.getElapsedTime() >= ball.duration) {
                 ball.x = ball.ix;
-              }
-              if (Math.abs(ball.iy - ball.y) <= 1) {
                 ball.y = ball.iy;
-              }
-              if (ball.aniTimer.getElapsedTime() >= ball.duration) {
                 ball.aniTimer.stop();
                 ball.aniEnd = true;
                 stopCount++;
