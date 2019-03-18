@@ -138,7 +138,7 @@
 		audio = Sound;
 		audio.element = elem;
 		audio.play();
-		// render(0);
+		render(0);
 	}, function(elem) {
 		throw elem.error;
 	});
@@ -164,10 +164,10 @@
 		return (base || 0) + (Math.random() - 0.5) * range * 2;
 	}
 
-	setInterval(function () {
+	/*setInterval(function () {
 		// audio.load();
 		console.log('播放');
         // audio.element.load();
 		audio.play();
-    }, 10000);
+    }, 10000);*/
 })();
