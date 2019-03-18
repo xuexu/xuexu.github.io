@@ -134,7 +134,7 @@
 		}
 	};
 	
-	loadAudioElement('music/biu.mp3').then(function(elem) {
+	loadAudioElement('music/TellMeWhy.mp3').then(function(elem) {
 		audio = Sound;
 		audio.element = elem;
 		audio.play();
