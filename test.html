@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=0">
+    <title>Title</title>
+    <script src="viewport.js"></script>
+    <script>
+        //参数uWidth修改成设计稿的宽度，相应的下面body的max-width: 属性也要修改
+        adaptVP({ uWidth: 375});
+    </script>
+    <style>
+        html,body{
+            margin: 0;
+            overflow-x: hidden;
+        }
+        .cus-input{
+            -moz-appearance: none;
+            -webkit-appearance: none;
+            appearance: none;
+            outline: none;
+            border: 2px solid #000;
+            border-radius: 5px;
+            text-indent: 2em;
+            /*padding: 5px 10px;*/
+            /*caret-color：#f00;*/
+        }
+        .cus-input::placeholder{
+            color: #000;
+            font-weight: bold;
+        }
+
+        .container{
+            height: 300px;
+            overflow-y: auto;
+            overflow-scrolling: touch;
+        }
+        p{
+            text-indent: 2em;
+            margin: 1px 2px 3px 4px;
+
+        }
+    </style>
+</head>
+<body>
+
+<p>1.启动前置摄像头启动前置摄像头启动前置摄像头启动前置摄像头启动前置摄像头启动前置摄像头启动前置摄像头启动前置摄像头启动前置摄像头启动前置摄像头启动前置摄像头启动前置摄像头启动前置摄像头启动前置摄像头启动前置摄像头</p>
+<p>2.启动前置摄像头启动前置摄像头启动前置摄像头启动前置摄像头启动前置摄像头启动前置摄像头启动前置摄像头启动前置摄像头启动前置摄像头启动前置摄像头启动前置摄像头启动前置摄像头启动前置摄像头启动前置摄像头启动前置摄像头</p>
+<p>3.启动前置摄像头启动前置摄像头启动前置摄像头启动前置摄像头启动前置摄像头启动前置摄像头启动前置摄像头启动前置摄像头启动前置摄像头启动前置摄像头启动前置摄像头启动前置摄像头启动前置摄像头启动前置摄像头启动前置摄像头</p>
+
+
+<p>启动前置摄像头</p>
+<input type="file" accept="video/*" capture="user">
+<p>启动后置摄像头</p>
+<input type="file" accept="video/*" capture="camera">
+
+<input type="text" placeholder="test" class="cus-input">
+
+<p>上传文件</p>
+<input type="file" placeholder="上传文件" class="cus-input">
+
+<div class="container">
+    <p>test</p>
+    <p>test</p>
+    <p>test</p>
+    <p>test</p>
+    <p>test</p>
+    <p>test</p>
+    <p>test</p>
+    <p>test</p>
+    <p>test</p>
+    <p>test</p>
+    <p>test</p>
+    <p>test</p>
+    <p>test</p>
+    <p>test</p>
+    <p>test</p>
+    <p>test</p>
+    <p>test</p>
+    <p>test</p>
+    <p>test</p>
+    <p>test</p>
+    <p>test</p>
+    <p>test</p>
+    <p>test</p>
+    <p>test</p>
+    <p>test</p>
+    <p>test</p>
+    <p>test</p>
+    <p>test</p>
+    <p>test</p>
+    <p>test</p>
+    <p>test</p>
+    <p>test</p>
+    <p>test</p>
+    <p>test</p>
+    <p>test</p>
+    <p>test</p>
+    <p>test</p>
+    <p>test</p>
+    <p>test</p>
+    <p>test</p>
+    <p>test</p>
+    <p>test</p>
+    <p>test</p>
+    <p>test</p>
+    <p>test</p>
+    <p>test</p>
+    <p>test</p>
+    <p>test</p>
+    <p>test</p>
+    <p>test</p>
+    <p>test</p>
+    <p>test</p>
+    <p>test</p>
+    <p>test</p>
+    <p>test</p>
+    <p>test</p>
+    <p>test</p>
+    <p>test</p>
+    <p>test</p>
+    <p>test</p>
+</div>
+<script
+        src="https://code.jquery.com/jquery-1.12.4.min.js"
+        integrity="sha256-ZosEbRLbNQzLpnKIkEdrPv7lOy9C27hHQ+Xp8a4MxAQ="
+        crossorigin="anonymous"></script>
+<script>
+    $(document).on('focus', 'input[type="text"],input[type="tel"],input[type="number"]', function(e){
+        window.prevScrollTop = $('html').get(0).scrollTop || $('body').get(0).scrollTop;
+    }).on('blur', 'input[type="text"],input[type="tel"],input[type="number"]', function(e){
+        setTimeout(function(){
+            $('body').get(0).scrollTop = window.prevScrollTop;
+        }, 200);
+    });
+</script>
+</body>
+</html>
